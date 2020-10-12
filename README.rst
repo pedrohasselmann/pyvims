@@ -83,34 +83,27 @@ A docker image is available on the
 
 Examples
 --------
-Download test files (ISIS3 cubes of ``1487096932_1``):
+Download a files from:
+https://sbnarchive.psi.edu/pds3/dawn/vir/DWNVVIR_V1B_v2/DATA/20110811_SURVEY/20110823_CYCLE5/VIR_VIS_1B_1_367420939_3.LBL
+https://sbnarchive.psi.edu/pds3/dawn/vir/DWNVVIR_V1B_v2/DATA/20110811_SURVEY/20110823_CYCLE5/VIR_VIS_1B_1_367420939_3.QUB
 
-.. code:: bash
-
-    $ wget https://vims.univ-nantes.fr/cube/C1487096932_1_vis.cub
-    $ wget https://vims.univ-nantes.fr/cube/C1487096932_1_ir.cub
-    $ wget https://vims.univ-nantes.fr/cube/N1487096932_1_vis.cub
-    $ wget https://vims.univ-nantes.fr/cube/N1487096932_1_ir.cub
-
-To use, simply do:
+Then, simply do:
 
 .. code:: python
 
-    >>> from pyvims import VIMS
+    >>> from pyvims import pyvir
+    >>> from matplotlib import pyplot as plt
 
-    >>> cub = VIMS('1487096932_1')
+    >>> qub = pyvir.VIR_QUB(path.join(your_home,your_path,'VIR_VIS_1B_1_367420939_3'))
 
-    >>> cub
-    VIMS cube: 1487096932_1 [ISIS3]
+    >>> qub
+    VIR cube: VIR_VIS_1B_1_367420939_3 [ISIS3]
 
-    >>> cub.time
-    '2005-02-14T18:05:00.976500'
+    >>> qub.cube.shape
+    (432, 16, 256)
 
-    >>> cub.target
-    u'TITAN'
-
-    >>> cub.NS, cub.NL
-    (42, 42)
+    >>> plt.imshow(qub.cube[100,:,:])
+    >>> plt.show()
 
 For more details, take a look to the
 `static Jupyter NoteBook <https://nbviewer.jupyter.org/github/seignovert/pyvims/blob/master/pyvims.ipynb>`_
