@@ -25,7 +25,9 @@ PyVIMS
         :target: https://mybinder.org/v2/gh/seignovert/pyvims/master?filepath=playground.ipynb
 
 
-Python package to manipulate the Cassini VIMS data.
+Python package to manipulate the Cassini VIMS & DAWN VIR data.
+
+pedrohasselmann edit: added some new adapted classes for reading DAWN VIR .QUB data.
 
 
 Install
