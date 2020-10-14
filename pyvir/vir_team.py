@@ -3,6 +3,7 @@ import os
 import numpy as np
 from datetime import datetime as dt
 import pvl
+import struct
 
 class VIR_TEAM(object):
     def __init__(self, imgID):
@@ -49,7 +50,7 @@ class VIR_TEAM(object):
 
     def readCUB(self):
         '''Read VIMS CUB data file'''
-        if self.lbl['QUBE']['CORE_ITEM_TYPE'] == 'SUN_INTEGER':
+        if self.lbl['QUBE']['CORE_ITEM_TYPE'] == 'IEEE_REAL':
             arch = '>' # Big endian
         else:
             arch = '<' # Little endian
@@ -61,29 +62,69 @@ class VIR_TEAM(object):
         else:
             raise ValueError('Unknown CORE_ITEM_BYTES')
 
-        dtype = np.dtype(arch+byte)
-        IDFoffset = (int(self.lbl['^HISTORY']) - 1) * int(self.lbl['RECORD_BYTES'])
-        nbytes = self.NS * int(self.lbl['QUBE']['CORE_ITEM_BYTES'])
+        dtype = np.dtype('>'+byte)
+        IDFoffset = (int(self.lbl['^HISTORY']) -1) * int(self.lbl['RECORD_BYTES'])
+        nbytes = int(self.lbl['QUBE']['CORE_ITEM_BYTES'])
 
-        cube = np.zeros((self.NB, self.NL, self.NS))
-        with open(self.fname) as f:
+        cube = np.zeros((self.NB, self.NS, self.NL))
+        with open(self.fname, 'rb') as f:
+            
+            recByte = int(self.lbl['RECORD_BYTES'])
+            dataPos = self.lbl['^HISTORY'] -1  # Data Pointer
+            dim     = self.lbl['QUBE']['CORE_ITEMS']
+            sfxItem = self.lbl['QUBE']['SUFFIX_ITEMS']
+            crType  = self.lbl['QUBE']['CORE_ITEM_TYPE']
+            crByte  = int(self.lbl['QUBE']['CORE_ITEM_BYTES'])
+
+            print(dim, type(dim))
+            print(sfxItem, type(sfxItem))
+            print(crType, type(crType))
+
+            if crType == "REAL" or crType == "IEEE_REAL":
+               tp='f'
+       
+
+            coreBlock=(dim[0]+sfxItem[0]-1)*(dim[1]+sfxItem[1]-1)*(dim[2]-1)*crByte
+            shape=(dim[0]+sfxItem[0]-1,(dim[1]+sfxItem[1]-1),dim[2]-1)
+            lineDim=dim[2]*crByte
+
+            dataStruc=str(dim[0]-1)+tp+sfxItem[0]*'L'
+            d=(dim[1]+sfxItem[1]-1)*(dim[2]-1)*dataStruc
+            
+            #print(coreBlock)
+            #print(shape)
+            #print(dataStruc)
+
+            #fl=open(self.fname,'rb')
+            f.seek(dataPos*recByte, os.SEEK_SET)
+            buff=f.read()
+            out=struct.unpack_from(arch+d,buff)
+            
+            cube=np.array(out, dtype=np.float32).reshape(shape,order='F')[0:dim[0],:,:]
+            
+            #print(cube)
+            
+            
+            '''
             f.seek(IDFoffset, os.SEEK_SET) # Skip Ascii header
-
-            if self.lbl['QUBE']['AXIS_NAME'] == ('SAMPLE', 'BAND', 'LINE'):
-                for line in xrange(self.NL):
-                    for band in xrange(self.NB):
-                        sample = np.frombuffer(f.read(nbytes),dtype=dtype) # Read image sample
+            
+            if self.lbl['QUBE']['AXIS_NAME'] == ['SAMPLE', 'BAND', 'LINE']:
+                for line in range(self.NL):
+                    for band in range(self.NB):
+                        sample = np.frombuffer(f.read(self.NS*nbytes),dtype=dtype) # Read image sample
                         cube[band, line, :] = sample
-            elif self.lbl['QUBE']['AXIS_NAME'] == ('SAMPLE', 'LINE', 'BAND'):
-                for band in xrange(self.NB):
-                    for line in xrange(self.NL):
-                        sample = np.frombuffer(f.read(nbytes),dtype=dtype) # Read image sample
+                        
+            elif self.lbl['QUBE']['AXIS_NAME'] == ['SAMPLE', 'LINE', 'BAND']:
+                for band in range(self.NB):
+                    for line in range(self.NL):
+                        sample = np.frombuffer(f.read(self.NS*nbytes),dtype=dtype) # Read image sample
                         cube[band, line, :] = sample
-            elif self.lbl['QUBE']['AXIS_NAME'] == ('BAND', 'SAMPLE', 'LINE'):
-                for band in xrange(self.NL):
-                    for line in xrange(self.NS):
-                        sample = np.frombuffer(f.read(nbytes),dtype=dtype) # Read image sample
-                        cube[band, line, :] = sample
-
+                        
+            elif self.lbl['QUBE']['AXIS_NAME'] == ['BAND', 'SAMPLE', 'LINE']:
+                for line in range(self.NL):
+                    for sample in range(self.NS):
+                        band = np.frombuffer(f.read(self.NB*nbytes),dtype=dtype) # Read image sample
+                        #cube[:, sample, line] = band
+            '''
         self.cube = cube
         return
